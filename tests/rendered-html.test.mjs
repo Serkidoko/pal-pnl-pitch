@@ -4,6 +4,7 @@ import test from "node:test";
 
 const output = new URL("../out/index.html", import.meta.url);
 const cssFile = new URL("../app/globals.css", import.meta.url);
+const pageFile = new URL("../app/page.tsx", import.meta.url);
 const publicDir = new URL("../public/", import.meta.url);
 
 async function renderedHtml() {
@@ -91,4 +92,28 @@ test("includes section transitions with a reduced-motion fallback", async () => 
   assert.match(css, /\[data-reveal\]\.is-visible/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.match(css, /scroll-behavior:\s*smooth/);
+});
+
+test("includes an eight-chapter presentation mode with keyboard, fullscreen and touch controls", async () => {
+  const [html, css, page] = await Promise.all([
+    renderedHtml(),
+    readFile(cssFile, "utf8"),
+    readFile(pageFile, "utf8"),
+  ]);
+  const slides = html.match(/data-presentation-slide="true"/gi) ?? [];
+
+  assert.equal(slides.length, 8);
+  assert.match(html, /Start presentation/i);
+  assert.match(html, /aria-label="PAL presentation mode"/i);
+  assert.match(html, /P&amp;L PRESENTATION MODE/i);
+  assert.match(html, /THE DECISION REQUEST/i);
+  assert.match(css, /\.presentation-overlay\.is-presenting/);
+  assert.match(css, /\.presentation-slide\.active/);
+  assert.match(css, /visibility:\s*hidden/);
+  assert.match(page, /requestFullscreen/);
+  assert.match(page, /setAttribute\("inert"/);
+  assert.match(page, /ArrowRight/);
+  assert.match(page, /event\.key === "Escape"/);
+  assert.match(page, /handleTouchStart/);
+  assert.match(page, /handleTouchEnd/);
 });

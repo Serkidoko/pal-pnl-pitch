@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const sources = {
   quickStart: "https://docs.mindpal.space/",
@@ -19,6 +19,8 @@ const navItems = [
   ["value", "Value"],
   ["pilot", "Pilot"],
 ] as const;
+
+const PRESENTATION_COUNT = 8;
 
 type SourceLinkProps = {
   href: string;
@@ -68,10 +70,203 @@ function CheckMark() {
   return <span className="check-mark" aria-hidden="true">✓</span>;
 }
 
+type PresentationModeProps = {
+  open: boolean;
+  active: number;
+  overlayRef: React.RefObject<HTMLDivElement | null>;
+  onExit: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onGoTo: (index: number) => void;
+  onTouchStart: (event: React.TouchEvent<HTMLDivElement>) => void;
+  onTouchEnd: (event: React.TouchEvent<HTMLDivElement>) => void;
+};
+
+function PresentationMode({
+  open,
+  active,
+  overlayRef,
+  onExit,
+  onPrevious,
+  onNext,
+  onGoTo,
+  onTouchStart,
+  onTouchEnd,
+}: PresentationModeProps) {
+  const slides: React.ReactNode[] = [
+    <div className="pitch-slide-inner pitch-cover" key="cover">
+      <div className="pitch-kicker"><span>THE P&amp;L DECISION</span><i /><span>VIN SMART FUTURE</span></div>
+      <h2>Put one business workflow on a <em>measurable operating path.</em></h2>
+      <p>PAL—MindPal in this proposal—provides the agent and workflow platform. The P&amp;L owner defines the outcome, baseline and right to scale.</p>
+      <div className="pitch-principle"><span>ONE P&amp;L</span><b>→</b><span>ONE WORKFLOW</span><b>→</b><span>ONE BASELINE</span><b>→</b><strong>ONE SCALE DECISION</strong></div>
+      <small className="pitch-disclaimer">Source-led proposal · no assumed ROI · no fictional customer proof</small>
+    </div>,
+
+    <div className="pitch-slide-inner" key="model">
+      <div className="pitch-heading"><p>01 · OPERATING MODEL</p><h2>The unit owns the outcome.<br />PAL operationalizes the workflow.</h2></div>
+      <div className="pitch-model-grid">
+        <article><span>01</span><small>P&amp;L OWNER</small><h3>Define the outcome</h3><p>Choose the metric and approve the financial baseline.</p></article>
+        <article><span>02</span><small>WORKFLOW OWNER</small><h3>Map the work</h3><p>Fix the process boundary, inputs, effort and quality standard.</p></article>
+        <article><span>03</span><small>PAL</small><h3>Configure the flow</h3><p>Assign knowledge, agent roles, variables and checkpoints.</p></article>
+        <article><span>04</span><small>FINANCE</small><h3>Verify the result</h3><p>Compare before and after; scale only on agreed evidence.</p></article>
+      </div>
+      <p className="pitch-proposal-note">Proposed engagement model—not a statement about any customer’s current operation.</p>
+    </div>,
+
+    <div className="pitch-slide-inner" key="platform">
+      <div className="pitch-heading"><p>02 · VERIFIED PLATFORM</p><h2>The building blocks are documented.<br />The business result must be earned.</h2></div>
+      <div className="pitch-capability-grid">
+        <article><span>GROUND</span><h3>Business-specific knowledge</h3><p>Files, websites or URLs, and editable notes can be assigned as knowledge sources.</p><SourceLink href={sources.knowledge} light>Official source</SourceLink></article>
+        <article><span>ORCHESTRATE</span><h3>Multi-agent workflows</h3><p>MindPal documents agents, shared variables and human checkpoints for important decisions.</p><SourceLink href={sources.quickStart} light>Official source</SourceLink></article>
+        <article><span>PUBLISH</span><h3>Shared and embedded delivery</h3><p>Published chatbots and workflows can be shared by link or embedded into a website.</p><SourceLink href={sources.embedding} light>Official source</SourceLink></article>
+        <article><span>CONTINUE</span><h3>Returning-user context</h3><p>Audience Memory and custom user IDs can restore prior conversation or workflow history.</p><SourceLink href={sources.memory} light>Official source</SourceLink></article>
+      </div>
+    </div>,
+
+    <div className="pitch-slide-inner" key="patterns">
+      <div className="pitch-heading"><p>03 · CANDIDATE WORKFLOWS</p><h2>Three credible patterns.<br />The client chooses the real one.</h2></div>
+      <div className="pitch-pattern-grid">
+        <article><span>01 · CANDIDATE</span><h3>Knowledge to decision draft</h3><div><b>Approved sources</b><i>→</i><b>Agent workflow</b><i>→</i><strong>Human-reviewed draft</strong></div><p>Measure research effort, cycle time and first-pass acceptance.</p></article>
+        <article><span>02 · CANDIDATE</span><h3>Request to reviewed output</h3><div><b>Structured request</b><i>→</i><b>Specialized agents</b><i>→</i><strong>Reviewed output</strong></div><p>Measure queue time, manual touches and quality pass rate.</p></article>
+        <article><span>03 · CANDIDATE</span><h3>Published expert experience</h3><div><b>Approved knowledge</b><i>→</i><b>Published experience</b><i>→</i><strong>Human handoff</strong></div><p>Measure adoption, completion and handoff rate.</p></article>
+      </div>
+      <p className="pitch-proposal-note">Candidate patterns—not case studies, deployed customer solutions or promises of impact.</p>
+    </div>,
+
+    <div className="pitch-slide-inner" key="value">
+      <div className="pitch-heading"><p>04 · VALUE WITHOUT FICTION</p><h2>No headline number until Finance approves the inputs.</h2></div>
+      <div className="pitch-value-grid">
+        <article><span>COST SAVED</span><div><strong>Measured hours removed</strong><i>×</i><strong>Approved loaded cost</strong></div><p>Do not call capacity a saving unless cost is removed or avoided.</p></article>
+        <article><span>REVENUE UNLOCKED</span><div><strong>Verified added throughput</strong><i>×</i><strong>Contribution per unit</strong></div><p>Count only throughput that converts into real demand, delivery or sales.</p></article>
+        <article><span>SPEED GAINED</span><div><strong>Baseline cycle time</strong><i>−</i><strong>Pilot cycle time</strong></div><p>Keep workflow boundary, input class and quality standard constant.</p></article>
+      </div>
+      <div className="pitch-equation"><span>Owner-approved baseline</span><b>+</b><span>Instrumented pilot</span><b>+</b><span>Explicit Finance rule</span><b>=</b><strong>Defensible value case</strong></div>
+    </div>,
+
+    <div className="pitch-slide-inner" key="control">
+      <div className="pitch-heading"><p>05 · CONTROL BEFORE SCALE</p><h2>Platform policy is evidence.<br />The client still owns approval.</h2></div>
+      <div className="pitch-control-grid">
+        <article><span>DOCUMENTED MINDPAL STATEMENTS</span><ul><li><CheckMark />Customer content is not used to train foundation models by default.</li><li><CheckMark />The privacy policy describes AWS infrastructure, encryption and access controls.</li><li><CheckMark />The Terms warn that AI output may contain inaccuracies, errors or omissions.</li></ul><div><SourceLink href={sources.privacy} light>Privacy Policy</SourceLink><SourceLink href={sources.terms} light>Terms</SourceLink></div></article>
+        <article><span>CLIENT DECISIONS REQUIRED</span><ul><li><b>01</b>Data scope and access roles</li><li><b>02</b>Human owner and approval points</li><li><b>03</b>Quality rubric and test set</li><li><b>04</b>Retention and incident path</li><li><b>05</b>Scale/no-scale authority</li></ul><p>Proposed enterprise gates—not a claim that PAL completes the client’s governance process.</p></article>
+      </div>
+    </div>,
+
+    <div className="pitch-slide-inner" key="pilot">
+      <div className="pitch-heading"><p>06 · MEASURED PILOT</p><h2>Start narrow. Instrument everything.<br />Scale on evidence.</h2></div>
+      <div className="pitch-pilot-track">
+        <article><span>DISCOVER</span><h3>Fix the baseline</h3><p>Name the outcome, boundary, owner, effort and quality standard.</p><small>EXIT: SIGNED BASELINE</small></article><i>→</i>
+        <article><span>CONFIGURE</span><h3>Build the workflow</h3><p>Assign approved knowledge, roles, variables and checkpoints.</p><small>EXIT: TESTABLE PAL FLOW</small></article><i>→</i>
+        <article><span>EVALUATE</span><h3>Prove task quality</h3><p>Run representative cases against an approved rubric.</p><small>EXIT: ACCEPTED TEST RECORD</small></article><i>→</i>
+        <article><span>DECIDE</span><h3>Measure live use</h3><p>Compare the agreed metric and controls with the baseline.</p><small>EXIT: SCALE OR STOP</small></article>
+      </div>
+      <p className="pitch-proposal-note">Duration, budget and success thresholds are agreed with the client; none are assumed here.</p>
+    </div>,
+
+    <div className="pitch-slide-inner pitch-ask" key="ask">
+      <div><p>THE DECISION REQUEST</p><h2>Choose one P&amp;L workflow.<br /><em>Let the evidence decide.</em></h2><span>PAL earns the right to scale only after a measured pilot proves value and control.</span></div>
+      <article><small>BRING TO THE FIRST WORKING SESSION</small><ul><li><CheckMark />One P&amp;L outcome</li><li><CheckMark />One workflow owner</li><li><CheckMark />Representative source material</li><li><CheckMark />A Finance-approved metric</li></ul><strong>Presented by Vin Smart Future</strong></article>
+    </div>,
+  ];
+
+  return (
+    <div
+      className={`presentation-overlay${open ? " is-presenting" : ""}`}
+      aria-hidden={!open}
+      aria-label="PAL presentation mode"
+      aria-modal="true"
+      role="dialog"
+      tabIndex={-1}
+      ref={overlayRef}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      <div className="pitch-grid" aria-hidden="true" />
+      <header className="presentation-header">
+        <span className="presentation-brand"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><b>PAL</b><small>Presented by Vin Smart Future</small></span>
+        <span className="presentation-label">P&amp;L PRESENTATION MODE</span>
+        <button type="button" onClick={onExit} aria-label="Exit presentation mode">Exit <kbd>Esc</kbd></button>
+      </header>
+
+      <div className="presentation-stage" aria-live="polite">
+        {slides.map((slide, index) => (
+          <section
+            className={`presentation-slide${index === active ? " active" : ""}`}
+            aria-hidden={index !== active}
+            data-presentation-slide
+            key={index}
+          >
+            {slide}
+          </section>
+        ))}
+      </div>
+
+      <footer className="presentation-controls">
+        <div className="presentation-counter"><strong>{String(active + 1).padStart(2, "0")}</strong><span>/ {String(PRESENTATION_COUNT).padStart(2, "0")}</span></div>
+        <div className="presentation-dots" aria-label="Presentation chapters">
+          {slides.map((_, index) => <button type="button" className={index === active ? "active" : ""} onClick={() => onGoTo(index)} aria-label={`Go to chapter ${index + 1}`} key={index} />)}
+        </div>
+        <div className="presentation-navigation">
+          <span>← → · Space · Swipe</span>
+          <button type="button" onClick={onPrevious} disabled={active === 0} aria-label="Previous chapter">←</button>
+          <button type="button" onClick={onNext} disabled={active === PRESENTATION_COUNT - 1} aria-label="Next chapter">→</button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
 export default function Home() {
   const [activeSection, setActiveSection] = useState("model");
   const [progress, setProgress] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [presenting, setPresenting] = useState(false);
+  const [presentationIndex, setPresentationIndex] = useState(0);
+  const presentationRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+
+  const goToPresentation = useCallback((index: number) => {
+    setPresentationIndex(Math.max(0, Math.min(PRESENTATION_COUNT - 1, index)));
+  }, []);
+
+  const nextPresentation = useCallback(() => {
+    setPresentationIndex((current) => Math.min(PRESENTATION_COUNT - 1, current + 1));
+  }, []);
+
+  const previousPresentation = useCallback(() => {
+    setPresentationIndex((current) => Math.max(0, current - 1));
+  }, []);
+
+  const openPresentation = useCallback(() => {
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setPresentationIndex(0);
+    setPresenting(true);
+    requestAnimationFrame(() => presentationRef.current?.focus());
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    }
+  }, []);
+
+  const closePresentation = useCallback(() => {
+    setPresenting(false);
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.().catch(() => undefined);
+    }
+  }, []);
+
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  }, []);
+
+  const handleTouchEnd = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null) return;
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+    const delta = touchStartX.current - endX;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 48) return;
+    if (delta > 0) nextPresentation();
+    else previousPresentation();
+  }, [nextPresentation, previousPresentation]);
 
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
@@ -123,8 +318,59 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!presenting) return;
+    const previousOverflow = document.body.style.overflow;
+    const backgroundElements = Array.from(document.querySelectorAll<HTMLElement>("main > :not(.presentation-overlay)"));
+    const previousInert = backgroundElements.map((element) => element.hasAttribute("inert"));
+    document.body.style.overflow = "hidden";
+    backgroundElements.forEach((element) => element.setAttribute("inert", ""));
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(event.key)) {
+        event.preventDefault();
+        nextPresentation();
+      } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(event.key)) {
+        event.preventDefault();
+        previousPresentation();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        goToPresentation(0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        goToPresentation(PRESENTATION_COUNT - 1);
+      } else if (event.key === "Escape") {
+        closePresentation();
+      }
+    };
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setPresenting(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      backgroundElements.forEach((element, index) => {
+        if (!previousInert[index]) element.removeAttribute("inert");
+      });
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      requestAnimationFrame(() => restoreFocusRef.current?.focus());
+    };
+  }, [closePresentation, goToPresentation, nextPresentation, presenting, previousPresentation]);
+
   return (
     <main id="top">
+      <PresentationMode
+        open={presenting}
+        active={presentationIndex}
+        overlayRef={presentationRef}
+        onExit={closePresentation}
+        onPrevious={previousPresentation}
+        onNext={nextPresentation}
+        onGoTo={goToPresentation}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      />
       <div className="scroll-progress" aria-hidden="true"><span style={{ transform: `scaleX(${progress / 100})` }} /></div>
 
       <header className={`site-header${scrolled ? " site-header-scrolled" : ""}`}>
@@ -137,7 +383,10 @@ export default function Home() {
             <a className={activeSection === id ? "active" : ""} href={`#${id}`} key={id}>{label}</a>
           ))}
         </nav>
-        <a className="header-cta" href="#ask">Choose a workflow <span aria-hidden="true">↘</span></a>
+        <div className="header-actions">
+          <button className="present-trigger" type="button" onClick={openPresentation}><span aria-hidden="true">▶</span> Present</button>
+          <a className="header-cta" href="#ask">Choose a workflow <span aria-hidden="true">↘</span></a>
+        </div>
       </header>
 
       <section className="hero">
@@ -162,8 +411,8 @@ export default function Home() {
             and let verified results decide what scales.
           </p>
           <div className="hero-actions" data-reveal>
-            <a className="button button-primary" href="#model">See the operating model <span aria-hidden="true">↓</span></a>
-            <a className="button button-ghost" href="#evidence">Review official sources <span aria-hidden="true">↗</span></a>
+            <button className="button button-primary" type="button" onClick={openPresentation}><span aria-hidden="true">▶</span> Start presentation</button>
+            <a className="button button-ghost" href="#model">Explore the landing page <span aria-hidden="true">↓</span></a>
           </div>
           <div className="truth-line" data-reveal>
             <span><CheckMark /> No assumed ROI</span>
