@@ -4,13 +4,14 @@ This file is the content gate for the replacement landing page. A statement may 
 presented as a fact only when it has an official source or written confirmation from
 the business owner. Assumptions must not be silently converted into claims.
 
-## Identity to confirm
+## User-confirmed scope
 
-- Confirm whether **PAL** is a new product name, an internal name, or shorthand for
-  MindPal. Until confirmed, the page must not state that PAL and MindPal are the same
-  legal product or brand.
-- Confirm the corporation, named business unit/P&L, geography, decision-maker title,
-  and whether those names may be published.
+- **PAL refers to MindPal** in this proposal.
+- **Vin Smart Future** is the presenting organization.
+- The page is an open English-language proposal for a new corporate customer.
+- The target business unit/P&L and decision-maker are intentionally unnamed.
+- The page may propose candidate workflow patterns, measurement logic and a pilot
+  structure, but they must be labeled as proposals rather than customer results.
 
 ## Officially supported MindPal facts
 
@@ -41,7 +42,7 @@ the business owner. Assumptions must not be silently converted into claims.
 - Customer counts, ARR, or outcome claims unless a current primary source directly
   supports the exact number and wording.
 
-## Evidence required from the P&L owner
+## Evidence required before a client-specific business case
 
 1. Named P&L, business model, geography, currency, and decision-maker title.
 2. The P&L priority to address (cost, revenue, speed, quality, risk, or another
@@ -50,8 +51,8 @@ the business owner. Assumptions must not be silently converted into claims.
    labor input/cost, quality baseline, and system/data sources.
 4. Financial baselines and calculation rules approved for use in the page.
 5. Pilot scope, timeline, budget/ask, decision gates, and accountable owners.
-6. Approved PAL description, brand assets, product screenshots, customer evidence,
-   and wording that may be published.
+6. Approved client brand assets, product screenshots, customer evidence, and wording
+   that may be published. The open proposal intentionally uses none of these.
 
 ## Publication rule
 
